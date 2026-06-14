@@ -56,7 +56,7 @@ Create a file named `credentials.json` in the same folder as `main.py`
 Replace `sk-your-key-here` with your real key from
 [elevenlabs.io](https://elevenlabs.io) under **Profile → API Key**.
 
-Any standard ElevenLabs account works, including the free tier (it includes
+ONLY PAID ElevenLabs account works, STARTER tier is recommended (it includes
 Instant Voice Cloning).
 
 ---
