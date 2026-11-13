@@ -38,8 +38,8 @@ that lives in `rooms-worker/`. Everything fits in Cloudflare's free plan.
 npm run deploy
 ```
 
-The first time, Wrangler asks to create a project called `voiceflow`. Say yes.
-You get a URL like `https://voiceflow.pages.dev`.
+The first time, Wrangler asks to create a project called `voiceflow-assistive-speaking`. Say yes.
+You get a URL like `https://voiceflow-assistive-speaking.pages.dev`.
 
 ### Way B: auto-deploy from GitHub
 
@@ -59,8 +59,8 @@ Every push to `main` then redeploys. (Still run `npm run deploy:rooms` once.)
 Never put your real key in `credentials.json` on GitHub. Store it in Cloudflare:
 
 ```bash
-npx wrangler pages secret put ELEVENLABS_API_KEY --project-name voiceflow
-npx wrangler pages secret put ACCESS_CODE --project-name voiceflow
+npx wrangler pages secret put ELEVENLABS_API_KEY --project-name voiceflow-assistive-speaking
+npx wrangler pages secret put ACCESS_CODE --project-name voiceflow-assistive-speaking
 ```
 
 `ACCESS_CODE` is optional but strongly recommended: without it, anyone who

@@ -5,7 +5,7 @@
     "dev:rooms": "wrangler dev --config rooms-worker/wrangler.toml --port 8788",
     "dev": "wrangler pages dev --port 8787",
     "deploy:rooms": "wrangler deploy --config rooms-worker/wrangler.toml",
-    "deploy": "wrangler pages deploy --project-name voiceflow"
+    "deploy": "wrangler pages deploy --project-name voiceflow-assistive-speaking"
   },
   "devDependencies": {
     "wrangler": "^4.20.0"

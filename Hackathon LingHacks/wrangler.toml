@@ -1,6 +1,6 @@
 # Cloudflare Pages config for VoiceFlow.
 # Static site: ./public    Serverless API: ./functions
-name = "voiceflow"
+name = "voiceflow-assistive-speaking"
 pages_build_output_dir = "./public"
 compatibility_date = "2025-04-01"
 
