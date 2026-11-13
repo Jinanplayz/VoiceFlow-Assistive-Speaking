@@ -8,18 +8,17 @@ import httpx
 from pathlib import Path
 from typing import Dict, Set
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form, WebSocket, WebSocketDisconnect, Query
-from fastapi.responses import HTMLResponse, StreamingResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, StreamingResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
 from pydantic import BaseModel
 
 BASE_DIR = Path(__file__).parent
-(BASE_DIR / "static").mkdir(exist_ok=True)
+PUBLIC_DIR = BASE_DIR / "public"   # same files Cloudflare Pages serves
+INDEX_HTML = PUBLIC_DIR / "index.html"
 
 app = FastAPI(title="VoiceFlow – Voice Accessibility Tool")
-app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
-templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+app.mount("/static", StaticFiles(directory=str(PUBLIC_DIR / "static")), name="static")
 
 ELEVENLABS_BASE = "https://api.elevenlabs.io/v1"
 
@@ -43,8 +42,16 @@ def load_api_key() -> str:
         'Create it with: {"elevenlabs_api_key": "your-key-here"}'
     )
 
+# The page may send a visitor's own key (Key settings dialog); it wins over credentials.json.
+_request_key = __import__("contextvars").ContextVar("request_key", default="")
+
+@app.middleware("http")
+async def capture_visitor_key(request: Request, call_next):
+    _request_key.set(request.headers.get("x-elevenlabs-key", "").strip())
+    return await call_next(request)
+
 def get_headers() -> dict:
-    return {"xi-api-key": load_api_key()}
+    return {"xi-api-key": _request_key.get() or load_api_key()}
 
 # ── Room system ───────────────────────────────────────────────────────────────
 # rooms[room_code] = {
@@ -71,8 +78,8 @@ def _generate_room_code() -> str:
 # ── HTTP routes ───────────────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+async def index():
+    return FileResponse(INDEX_HTML)
 
 
 @app.get("/favicon.ico")
@@ -80,15 +87,16 @@ async def favicon():
     return RedirectResponse(url="/static/favicon.svg")
 
 @app.get("/listen", response_class=HTMLResponse)
-async def listen_page(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+async def listen_page():
+    return FileResponse(INDEX_HTML)
 
 @app.get("/api/status")
 async def status():
-    try:
-        load_api_key()
-    except RuntimeError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    if not _request_key.get():
+        try:
+            load_api_key()
+        except RuntimeError as e:
+            raise HTTPException(status_code=500, detail=str(e))
     async with httpx.AsyncClient(timeout=10.0) as client:
         r = await client.get(f"{ELEVENLABS_BASE}/user", headers=get_headers())
     if r.status_code != 200:
@@ -234,7 +242,7 @@ async def clone_voice(
     files = {
         "files": (audio_file.filename or "recording.wav", audio_bytes, audio_file.content_type or "audio/wav"),
         "name": (None, voice_name),
-        "description": (None, f"EchoAble cloned voice: {voice_name}"),
+        "description": (None, f"VoiceFlow cloned voice: {voice_name}"),
     }
     async with httpx.AsyncClient(timeout=60.0) as client:
         r = await client.post(f"{ELEVENLABS_BASE}/voices/add", headers=get_headers(), files=files)

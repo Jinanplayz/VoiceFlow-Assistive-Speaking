@@ -9,6 +9,88 @@ ElevenLabs API key.
 
 ---
 
+## Put it online (Cloudflare Pages)
+
+The `public/` folder is the website and `functions/` is a small serverless API
+that talks to ElevenLabs for you. Live Rooms run in a Cloudflare Durable Object
+that lives in `rooms-worker/`. Everything fits in Cloudflare's free plan.
+
+> Drag-and-drop upload in the Cloudflare dashboard does **not** include the
+> `functions/` folder, so the app would load but nothing would work. Use one of
+> the two ways below.
+
+### One-time setup
+
+1. Make a free account at [dash.cloudflare.com](https://dash.cloudflare.com).
+2. Install [Node.js](https://nodejs.org) (LTS), then in this folder run:
+   ```bash
+   npm install
+   npx wrangler login
+   ```
+3. Deploy the Live Rooms worker (do this first, the site links to it):
+   ```bash
+   npm run deploy:rooms
+   ```
+
+### Way A: deploy from your computer
+
+```bash
+npm run deploy
+```
+
+The first time, Wrangler asks to create a project called `voiceflow`. Say yes.
+You get a URL like `https://voiceflow.pages.dev`.
+
+### Way B: auto-deploy from GitHub
+
+In the dashboard: **Workers & Pages → Create → Pages → Connect to Git**, pick
+this repo, and set:
+
+| Setting | Value |
+|---|---|
+| Root directory | `Hackathon LingHacks` |
+| Build command | *(leave empty)* |
+| Build output directory | `public` |
+
+Every push to `main` then redeploys. (Still run `npm run deploy:rooms` once.)
+
+### Add your ElevenLabs key (secret)
+
+Never put your real key in `credentials.json` on GitHub. Store it in Cloudflare:
+
+```bash
+npx wrangler pages secret put ELEVENLABS_API_KEY --project-name voiceflow
+npx wrangler pages secret put ACCESS_CODE --project-name voiceflow
+```
+
+`ACCESS_CODE` is optional but strongly recommended: without it, anyone who
+finds your URL can spend your ElevenLabs credits and see or delete your voices.
+Visitors enter the code (or their own ElevenLabs key) with the key button in
+the top-right of the page. Run `npm run deploy` again after changing secrets.
+
+If you set no `ELEVENLABS_API_KEY` at all, the site still works: every visitor
+just pastes their own key in Key settings.
+
+### Test the online version on your computer
+
+```bash
+npm run dev:rooms
+```
+then in a second terminal:
+```bash
+npm run dev
+```
+and open `http://localhost:8787`. Put local secrets in a file called
+`.dev.vars` (already git-ignored):
+```
+ELEVENLABS_API_KEY=sk_your_key
+ACCESS_CODE=pick-a-code
+```
+
+---
+
+## Run it locally with Python instead
+
 ## 1. Install Python
 
 You need Python 3.10 or newer.
@@ -114,23 +196,25 @@ using a port with:
 netstat -ano | findstr :8080
 ```
 
-### `jinja2.exceptions.TemplateNotFound: index.html`
+### `index.html` not found / page won't load
 
-The `templates` folder is missing or in the wrong place. Your folder must
+The `public` folder is missing or in the wrong place. Your folder must
 look like this:
 
 ```
 your-project-folder/
-├── main.py
-├── credentials.json
+├── main.py              (local Python server)
+├── credentials.json     (local only, keep your real key out of git)
 ├── requirements.txt
-├── static/
-│   └── favicon.svg
-└── templates/
-    └── index.html
+├── wrangler.toml        (Cloudflare Pages config)
+├── public/              (the website, served by both)
+│   ├── index.html
+│   └── static/favicon.svg
+├── functions/           (Cloudflare API)
+└── rooms-worker/        (Cloudflare Live Rooms)
 ```
 
-Make sure `index.html` is inside a folder literally named `templates`,
+Make sure `index.html` is inside a folder literally named `public`,
 sitting next to `main.py`.
 
 ### The connection pill stays grey or shows "Not connected"
@@ -139,7 +223,7 @@ This means `credentials.json` wasn't found or the key inside it isn't valid.
 Check that:
 
 - `credentials.json` is in the same folder as `main.py` (not inside
-  `templates` or `static`)
+  `public`)
 - The file contains valid JSON, with double quotes around both the key name
   and the value
 - The API key itself is correct and hasn't been revoked
@@ -178,8 +262,7 @@ longer file, and try again.
    testing on one computer, two browser tabs both pointing at
    `http://localhost:8080` works fine. If you're sharing with someone on a
    different device, you'll need to host the app somewhere reachable by both
-   (for example, a tunneling tool, or deploying it to a server) rather than
-   relying on `localhost`.
+   (see **Put it online** above) rather than relying on `localhost`.
 
 ---
 

@@ -1,0 +1,16 @@
+# Cloudflare Pages config for VoiceFlow.
+# Static site: ./public    Serverless API: ./functions
+name = "voiceflow"
+pages_build_output_dir = "./public"
+compatibility_date = "2025-04-01"
+
+# Live Rooms run in a Durable Object that lives in the separate
+# "voiceflow-rooms" worker (./rooms-worker). Deploy that first.
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "RoomDO"
+script_name = "voiceflow-rooms"
+
+# Secrets are NOT stored here. Set them with:
+#   npx wrangler pages secret put ELEVENLABS_API_KEY
+#   npx wrangler pages secret put ACCESS_CODE      (optional)
